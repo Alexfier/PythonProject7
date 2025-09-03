@@ -1,21 +1,36 @@
-Проект по модулю "Разработка веб-приложений на Django"
-Проект о созданий и работе с веб-приложений
+Онлайн курсы (проект платформы для онлайн-обучения)
+Описание
+Платформа для онлайн-обучения
 
-Описание проекта
-В проекте реализованны основы по работе с Django. А имено создание и работа с классами CBV и что такое CRUD (Create, Read, Update, Delete) работа с шаблонами и подшаблонами, Аутентификация в веб-приложениях и права доступа, а также кешироание данных. для премера работы присутствует json-файлы применение фикстур python manage.py loaddata product_fixture.json --format json python manage.py loaddata category_fixture.json --format json python manage.py loaddata user_fixture.json --format json
+Тестирование
+Протестированы CRUD для Lesson и управления подпиской
 
-Установка:
+Запуск проекта с помощью Docker Compose
+Этот проект использует Docker Compose для запуска всех необходимых сервисов одной командой. В состав проекта входят:
+
+Веб-приложение на Django;
+PostgreSQL — база данных;
+Redis — брокер сообщений для Celery;
+Celery Worker — для выполнения фоновых задач;
+Celery Beat — для планирования периодических задач.
+Подготовка к запуску проекта:
+Установите Docker.
+Установите Docker Compose.
+Убедитесь, что Docker запущен и работает.
+Запустите Redis-server.exe
+Запуск проекта
 Клонируйте репозиторий:
-https://github.com/Alexfier/26.1.git
-Установите зависимости:
-# для первичной установки
-poetry install
-# для обновления
-poetry update
+git clone hhttps://github.com/Alexfier/PythonProject7.git
+Создайте файл .env в корне проекта и добавьте туда необходимые переменные окружения, указанные в файле .env.sample.
+Запустите проект, выполнив команду для запуска в фоновом режиме:
+docker-compose up -d
 
-# применение фикстур
-python manage.py loaddata product_fixture.json --format json
-python manage.py loaddata category_fixture.json --format json
-python manage.py loaddata user_fixture.json --format json
-Использование:
-a) Запустите redis-server б) В терминале введите команду запуска сервера: python manage.py runserver
+Дополнительные команды:~~
+~~
+Для просмотра запущенных контейнеров:
+docker-compose ps
+Для просмотра логов всех контейнеров:
+
+docker-compose logs
+Для остановки сервисов и удаления контейнеров:
+docker-compose down -v.
