@@ -9,19 +9,24 @@ services:
       - '6379'
 
   db:
-    image: postgres:16-alpine
-    restart: on-failure
-    env_file:
-      - .env
-    expose:
-      - '5432'
+    image: postgres:13
+    environment:
+      POSTGRES_DB: drf
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
     healthcheck:
-      test: ['CMD-SHELL', '-c', 'pg_isready -U $POSTGRES_USER']
-      interval: 10s
-      retries: 5
+      test: [ "CMD-SHELL", "pg_isready -U ${USER} -d drf" ]
+      interval: 5s
       timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
 
   app:
     build: .
@@ -38,32 +43,53 @@ services:
       - .env
 
   celery:
-    build: .
-    tty: true
-    command: celery -A config worker -l INFO
-    restart: on-failure
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A config worker --loglevel=info --pool=prefork --concurrency=4
+    environment:
+      DATABASE_URL: postgres://${USER}:${PASSWORD}@db:5432/drf
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_BROKER_URL}
     volumes:
-      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
     depends_on:
-      - redis
-      - db
-      - app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
-      - .env
+      - ./.env
+    networks:
+      - backend
 
-  celery-beat:
-    build: .
-    tty: true
-    command: celery -A config beat -l INFO
-    restart: on-failure
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      DATABASE_URL: postgres://${USER}:${PASSWORD}@db:5432/drf
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     volumes:
-      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
     depends_on:
-      - redis
-      - db
-      - app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      celery:
+        condition: service_started
     env_file:
-      - .env
+      - ./.env
+    networks:
+      - backend
 
 volumes:
-  pg_data:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
