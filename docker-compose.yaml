@@ -10,16 +10,12 @@ services:
 
   db:
     image: postgres:13
-    environment:
-      POSTGRES_DB: drf
-      POSTGRES_USER: ${USER}
-      POSTGRES_PASSWORD: ${PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - ./.env
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${USER} -d drf" ]
+      test: [ "CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -49,18 +45,13 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/mediafiles
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - ./.env
+      - app
 
   celery_beat:
     build:
       context: .
       dockerfile: Dockerfile
-    command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: celery -A config beat --loglevel=info
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/mediafiles
