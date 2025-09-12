@@ -1,32 +1,33 @@
 import stripe
+
 from config.settings import STRIPE_API_KEY
 
 stripe.api_key = STRIPE_API_KEY
 
 
-def create_stripe_product(course_title):
-    stripe_product = stripe.Product.create(name=course_title)
-    return stripe_product.get('id')
+def create_stripe_product(instance):
+    """Создаем продукт в страйпе"""
+    title_product = f"{instance.paid_course}" if instance.paid_course else instance.separately_paid_lesson
+    stripe_product = stripe.Product.create(name=f'{title_product}')
+    return stripe_product.id
 
 
-def create_stripe_price(course_price, stripe_product_id):
-    stripe_price = stripe.Price.create(
-        currency='rub',
-        unit_amount=course_price * 100,
-        product_data={'name': 'payment'},
-        product=stripe_product_id,
+def create_stripe_price(payment, stripe_product_id):
+    """Создаем цену в страйпе"""
+    price = stripe.Price.create(
+        currency="rub",
+        unit_amount=payment.payment_amount * 100,
+        # product_data={"name": "Payment"},
+        product=stripe_product_id
     )
-    return stripe_price
+    return price.id
 
 
-def create_stripe_session(stripe_price):
+def create_stripe_session(price):
+    """Создаем сессию для оплаты в страйпе"""
     session = stripe.checkout.Session.create(
         success_url="http://127.0.0.1:8000/",
-        line_items=[{
-            "price": stripe_price.get('id'),
-            "quantity": 1,
-        }],
-        mode="payment"
+        line_items=[{"price": price, "quantity": 1}],
+        mode="payment",
     )
-    return session.get('id'), session.get('url')
-
+    return session.id, session.url

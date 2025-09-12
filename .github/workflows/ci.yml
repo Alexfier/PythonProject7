@@ -1,4 +1,4 @@
-name: pythonProject5
+name: pythonProject7
 
 on: [push, pull_request]
 
