@@ -1,6 +1,17 @@
-Проект по Django REST Framework
-часть первая "Вьюсеты и дженерики"
-pip install django python -m pip install os
-python -m pip install psycopg2-binary python -m pip install Pillow
-pip install python-dotenv
-pip install dotenv
+## Запуск/остановка `docker-compose`
+
+Запуск осуществляется выполнением команды:
+```docker-compose up
+docker-compose up -d --build
+```
+Что бы получить информацию обо всех запущенных контейнерах, выполните команду:
+```docker-compose ps
+docker-compose ps
+```
+
+Что бы остановить docker-compose, выполните команду:
+```docker-compose down
+docker-compose down
+```
+
+##
