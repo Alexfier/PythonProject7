@@ -1,24 +1,26 @@
 from django.urls import path
-from users.apps import UsersConfig
+from rest_framework.permissions import AllowAny
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
-from users.views import UserViewSet, PaymentsListAPIView, PaymentsRetrieveAPIView, \
-    PaymentsCreateAPIView, PaymentsUpdateAPIView, PaymentsDestroyAPIView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
-
-router = DefaultRouter()
-router.register(r'user', UserViewSet, basename='user')
+from users.apps import UsersConfig
+from users.views import UserViewSet
 
 app_name = UsersConfig.name
 
-urlpatterns = [
-      path('payments/', PaymentsListAPIView.as_view(), name='lesson-list'),
-      path('payments/<int:pk>/', PaymentsRetrieveAPIView.as_view(), name='lesson'),
-      path('payments/create/', PaymentsCreateAPIView.as_view(), name='lesson-create'),
-      path('payments/<int:pk>/update/', PaymentsUpdateAPIView.as_view(), name='lesson-update'),
-      path('payments/<int:pk>/delete/', PaymentsDestroyAPIView.as_view(), name='lesson-delete'),
+router = DefaultRouter()
+router.register(r"users", UserViewSet, basename="users")
 
-      path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-      path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-      path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+urlpatterns = [
+    path(
+        "login/",
+        TokenObtainPairView.as_view(permission_classes=(AllowAny,)),
+        name="login",
+    ),
+    path(
+        "token/refresh/",
+        TokenRefreshView.as_view(permission_classes=(AllowAny,)),
+        name="token_refresh",
+    ),
 ] + router.urls
