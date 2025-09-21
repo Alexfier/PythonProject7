@@ -1,25 +1,24 @@
-FROM python:3.12-slim
+# Указываем базовый образ
+FROM python:3.12.5-slim
 
-WORKDIR /app
+# Устанавливаем рабочую директорию в контейнере
+WORKDIR /OnlineTraining
 
-# Установка системных зависимостей для Postgres и других пакетов
-RUN apt-get update && apt-get install -y \
-    libjpeg-dev \
-    zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Копируем файл с зависимостями и устанавливаем их
+COPY requirements.txt .
 
-# Установка Poetry
-RUN pip install poetry
-RUN poetry config virtualenvs.create false
+RUN apt-get update && \
+    apt-get install -y gcc libpq-dev && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Копирование зависимостей
-COPY pyproject.toml poetry.lock* ./
-
-# Установка зависимостей
-RUN poetry install --no-root --no-interaction --no-ansi
-
-# Копирование остальных файлов
+# Копируем остальные файлы проекта в контейнер
 COPY . .
 
-# Переменные окружения
-ENV PYTHONPATH=/app
+# Открываем порт 8000 для взаимодействия с приложением
+EXPOSE 8000
+
+# Определяем команду для запуска приложения
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"]
