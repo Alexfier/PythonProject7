@@ -1,53 +1,53 @@
 import stripe
+from django.conf import settings
 
-from config import settings
-
-
-# from config import settings
+stripe.api_key = settings.STRIPE_API_KEY
 
 
-def create_stripe_product(product):
-    """ Функция создания продукта для оплаты """
-    stripe.api_key = settings.STRIPE_API_KEY
-    # Создали продукт(курс) для оплаты
-    stripe_product = stripe.Product.create(name=product.title,
-                                           active=True,
-                                           metadata={
-                                               "description": product.description,
-                                               "owner": product.owner,
-                                               "price": product.price,
-                                           }
-                                           )
-    return stripe_product
+def create_stripe_product(course):
+    """Создает продукт в Stripe на основе курса."""
+    try:
+        product = stripe.Product.create(
+            name=course.title,
+            description=course.description or f"Курс: {course.title}",
+        )
+        return product
+    except stripe.error.StripeError as e:
+        raise Exception(f"Ошибка при создании продукта: {str(e)}")
 
 
-def modify_stripe_product(product):
-    """ Функция обновления продукта для оплаты """
-    stripe.api_key = settings.STRIPE_API_KEY
-    # Создали продукт(курс) для оплаты
-    return stripe.Product.modify(id=product.id_stripe_product,
-                                 metadata={
-                                     "description": product.description,
-                                     "owner": product.owner,
-                                     "price": product.price,
-                                 }
-                                 )
+def create_stripe_price(amount, product_id, currency="rub"):
+    """Создает цену для продукта в Stripe."""
+    try:
+        price = stripe.Price.create(
+            unit_amount=int(amount * 100),
+            currency=currency,
+            product=product_id,
+        )
+        return price
+    except stripe.error.StripeError as e:
+        raise Exception(f"Ошибка при создании цены: {str(e)}")
 
 
-def create_stripe_price(price: int, id_stripe_product):
-    """ Функция создания цены продукта для оплаты """
-    stripe.api_key = settings.STRIPE_API_KEY
-    # Создали цену
-    return stripe.Price.create(currency='rub',
-                               product=id_stripe_product,
-                               unit_amount=price * 100
-                               )
-
-
-def create_stripe_session(price):
-    stripe.api_key = settings.STRIPE_API_KEY
-    """ Функция, которая открывает платёжную сессию. """
-    session = stripe.checkout.Session.create(success_url="http://127.0.0.1:8000/",
-                                             line_items=[{"price": price.get("id"), "quantity": 1}],
-                                             mode='payment',)
-    return session.get("id"), session.get("url")
+def create_stripe_session(price_id, success_url, cancel_url, course_id, user_id):
+    """Создает сессию оплаты в Stripe."""
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price": price_id,
+                    "quantity": 1,
+                }
+            ],
+            mode="payment",
+            success_url=f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=cancel_url,
+            metadata={
+                "course_id": course_id,
+                "user_id": user_id,
+            }
+        )
+        return session.id, session.url
+    except stripe.error.StripeError as e:
+        raise Exception(f"Ошибка при создании сессии: {str(e)}")

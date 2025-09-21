@@ -1,57 +1,49 @@
-from rest_framework import viewsets
-from rest_framework import generics
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework import viewsets, generics, filters
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 from users.models import Payments, User
 from users.permissions import IsOwner
-from users.serializers import PaymentsSerializer, UserSerializer
-from users.services import create_stripe_session, create_stripe_price
+from users.serializer import PaymentsSerializers, UserSerializer
+from rest_framework.generics import (
+    CreateAPIView,
+    RetrieveAPIView,
+    UpdateAPIView,
+    DestroyAPIView,
+)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class PaymentsViewSet(viewsets.ModelViewSet):
+    serializer_class = PaymentsSerializers
+    queryset = Payments.objects.all()
+    filter_backends = [filters.OrderingFilter]
+    filterset_fields = ["paid_course", "separately_paid_lesson", "payment_method"]
+    ordering_fields = ["payment_date"]
+
+
+class UserCreateApiView(CreateAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
-
-
-class PaymentsListAPIView(generics.ListAPIView):
-    queryset = Payments.objects.all()
-    serializer_class = PaymentsSerializer
-    permission_classes = [IsAdminUser | IsOwner]
-    filter_backends = [SearchFilter, OrderingFilter]
-    search_filter = ['paid_course', 'paid_lesson', 'method_payment',]
-    ordering_filter = ['date_payment',]
-
-
-class PaymentsRetrieveAPIView(generics.RetrieveAPIView):
-    serializer_class = PaymentsSerializer
-    permission_classes = [IsAdminUser | IsOwner]
-
-
-class PaymentsCreateAPIView(generics.CreateAPIView):
-    queryset = Payments.objects.all()
-    serializer_class = PaymentsSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = (AllowAny,)
 
     def perform_create(self, serializer):
-        """ Оплата покупки через stripe """
-        payment = serializer.save(owner=self.request.user)
-        course = payment.paid_course
-        # price = payment.paid_course.price
-        # id_stripe_product = payment.paid_course.id_stripe_product
-        price = create_stripe_price(course.price, course.id_stripe_product)
-
-        session_id, payment_link = create_stripe_session(price)
-        payment.session_id = session_id
-        payment.link = payment_link
-        payment.method_payment = "Перевод"
-        payment.save()
+        user = serializer.save(is_active=True)
+        user.set_password(user.password)
+        user.save()
 
 
-class PaymentsUpdateAPIView(generics.UpdateAPIView):
-    serializer_class = PaymentsSerializer
-    permission_classes = [IsAdminUser]
+class UserRetrieveAPIView(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsOwner]
 
 
-class PaymentsDestroyAPIView(generics.DestroyAPIView):
-    serializer_class = PaymentsSerializer
-    permission_classes = [IsAdminUser]
+class UserUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsOwner]
+
+
+class UserDestroyAPIView(DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsOwner]
