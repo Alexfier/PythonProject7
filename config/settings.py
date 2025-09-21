@@ -187,12 +187,10 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 STRIPE_API_KEY = os.getenv('STRIPE_API_KEY')
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny'
-    ],
+    # другие настройки...
 }
 
 SIMPLE_JWT = {
